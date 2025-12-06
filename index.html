@@ -1,127 +1,107 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-<meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Henrique 2 Anos</title>
-
 <style>
-    html, body {
+    * {
         margin: 0;
         padding: 0;
-        width: 100vw;
-        height: 100vh;
+        box-sizing: border-box;
         overflow: hidden;
-        background: black;
     }
 
-    video {
+    body, html {
+        width: 100%;
+        height: 100%;
+        background: black;
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
+        inset: 0;
+    }
+
+    #camera {
+        position: fixed;
+        width: 100%;
+        height: 100%;
         object-fit: cover;
         z-index: 1;
     }
 
-    .overlay {
+    #overlay {
         position: fixed;
         top: 0;
         left: 0;
-        width: 100vw;
-        height: 100vh;
-        object-fit: contain;
-        z-index: 3;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
         pointer-events: none;
+        z-index: 2;
     }
 
-    .controls {
+    #buttons {
         position: fixed;
-        bottom: env(safe-area-inset-bottom, 20px);
+        bottom: 30px;
         width: 100%;
         display: flex;
-        justify-content: space-around;
-        align-items: center;
-        z-index: 4;
-        padding: 10px 0;
+        justify-content: center;
+        gap: 50px;
+        z-index: 3;
     }
 
     .btn {
-        width: 65px;
-        height: 65px;
-        background: white;
+        width: 70px;
+        height: 70px;
         border-radius: 50%;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        font-size: 26px;
-        cursor: pointer;
+        background: white;
         border: none;
-        font-weight: bold;
-        user-select: none;
+        font-size: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
     }
 </style>
 </head>
-
 <body>
 
 <video id="camera" autoplay playsinline></video>
-<img class="overlay" src="Moldura sua vez _20251205_115536_0000.png">
+<img id="overlay" src="moldura.png">
 
-<div class="controls">
-    <div class="btn" id="flip">🔄</div>
-    <div class="btn" id="capture">📸</div>
-    <div class="btn" id="record">🎥</div>
+<div id="buttons">
+    <button class="btn" id="flip">🔄</button>
+    <button class="btn" id="capture">📸</button>
+    <button class="btn" id="record">🎥</button>
 </div>
 
-<canvas id="snapshot" style="display:none;"></canvas>
-
 <script>
-let isFront = true;
-let stream;
-const camera = document.getElementById("camera");
-const captureBtn = document.getElementById("capture");
-const flipBtn = document.getElementById("flip");
+    let facingMode = "user";
+    let stream;
 
-function startCamera() {
-    navigator.mediaDevices.getUserMedia({
-        video: { facingMode: isFront ? "user" : "environment" }
-    })
-    .then(s => {
-        stream = s;
-        camera.srcObject = s;
-    })
-    .catch(() => alert("⚠️ Permita acesso à câmera!"));
-}
+    async function startCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
 
-flipBtn.addEventListener("click", () => {
-    isFront = !isFront;
-    if (stream) stream.getTracks().forEach(t => t.stop());
-    startCamera();
-});
+        stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode }
+        });
 
-captureBtn.addEventListener("click", () => {
-    const canvas = document.getElementById("snapshot");
-    const context = canvas.getContext("2d");
-
-    canvas.width = camera.videoWidth;
-    canvas.height = camera.videoHeight;
-
-    context.drawImage(camera, 0, 0, canvas.width, canvas.height);
-
-    const img = new Image();
-    img.src = document.querySelector(".overlay").src;
-    img.onload = () => {
-        context.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const link = document.createElement("a");
-        link.download = "foto-henrique2anos.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
+        document.getElementById("camera").srcObject = stream;
     }
-});
 
-startCamera();
+    document.getElementById("flip").addEventListener("click", () => {
+        facingMode = (facingMode === "user") ? "environment" : "user";
+        startCamera();
+    });
+
+    document.getElementById("capture").addEventListener("click", () => {
+        alert("Foto capturada (função pendente)");
+    });
+
+    document.getElementById("record").addEventListener("click", () => {
+        alert("Vídeo em gravação (função pendente)");
+    });
+
+    startCamera();
 </script>
 
 </body>
