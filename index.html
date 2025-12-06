@@ -1,1 +1,57 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Henrique 2 Anos</title>
 
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: black;
+        }
+
+        video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 1;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            object-fit: contain;
+            z-index: 2;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+    <video id="camera" autoplay playsinline></video>
+
+    <img class="overlay" src="Moldura sua vez _20251205_115536_0000.png" alt="Moldura">
+
+    <script>
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+            .then(stream => {
+                const video = document.getElementById("camera");
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error("Erro ao acessar câmera:", error);
+                alert("Permita o acesso à câmera para usar esta experiência!");
+            });
+    </script>
+</body>
+</html>
