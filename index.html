@@ -1,121 +1,189 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<style>
-    * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-        overflow: hidden;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Câmera com Moldura</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: black;
+            display: flex;
+            justify-content: center;
+        }
 
-    body, html {
-        width: 100%;
-        height: 100%;
-        background: black;
-        position: fixed;
-        inset: 0;
-    }
+        #camera-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-    #camera {
-        position: fixed;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        z-index: 1;
-    }
+        video {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+        }
 
-    #overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        pointer-events: none;
-        z-index: 2;
-    }
+        #frame {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            pointer-events: none;
+        }
 
-    #buttons {
-        position: fixed;
-        bottom: 30px;
-        width: 100%;
-        display: flex;
-        justify-content: center;
-        gap: 50px;
-        z-index: 3;
-    }
+        #controls {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            z-index: 20;
+        }
 
-    .btn {
-        width: 70px;
-        height: 70px;
-        border-radius: 50%;
-        background: white;
-        border: none;
-        font-size: 30px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    }
-</style>
+        .btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #preview-container {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 30;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #preview {
+            width: 90%;
+            border-radius: 10px;
+        }
+
+        .preview-btns {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .preview-btn {
+            padding: 15px 20px;
+            background: white;
+            font-size: 18px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
+    <div id="camera-container">
+        <video id="camera" autoplay playsinline></video>
+        <img id="frame" src="moldura.png">
 
-<video id="camera" autoplay playsinline></video>
-<img id="overlay" src="moldura.png">
+        <div id="controls">
+            <div class="btn" id="flip">🔄</div>
+            <div class="btn" id="photo">📸</div>
+            <div class="btn" id="video-btn">🎥</div>
+        </div>
 
-<div id="buttons">
-    <button class="btn" id="flip">🔄</button>
-    <button class="btn" id="capture">📸</button>
-    <button class="btn" id="record">🎥</button>
-</div>
+        <div id="preview-container">
+            <img id="preview">
+            <div class="preview-btns">
+                <div class="preview-btn" id="save">Salvar</div>
+                <div class="preview-btn" id="retake">Tirar outra</div>
+            </div>
+        </div>
+    </div>
 
-<script>
-    let facingMode = "user";
-    let stream;
-    const camera = document.getElementById("camera");
-    const overlay = document.getElementById("overlay");
+    <canvas id="canvas" style="display:none;"></canvas>
 
-    async function startCamera() {
-        if (stream) stream.getTracks().forEach(t => t.stop());
+    <script>
+        let camera = document.getElementById("camera");
+        let canvas = document.getElementById("canvas");
+        let flipBtn = document.getElementById("flip");
+        let photoBtn = document.getElementById("photo");
+        let videoBtn = document.getElementById("video-btn");
+        let previewContainer = document.getElementById("preview-container");
+        let previewImg = document.getElementById("preview");
 
-        stream = await navigator.mediaDevices.getUserMedia({
-            video: { facingMode }
-        });
+        let currentFacingMode = "user";
+        let stream;
+        let mediaRecorder;
+        let recordedChunks = [];
 
-        camera.srcObject = stream;
-    }
+        async function startCamera() {
+            if (stream) stream.getTracks().forEach(t => t.stop());
 
-    document.getElementById("flip").addEventListener("click", () => {
-        facingMode = (facingMode === "user") ? "environment" : "user";
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: currentFacingMode },
+                audio: true
+            });
+
+            camera.srcObject = stream;
+        }
+
+        flipBtn.onclick = () => {
+            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+            startCamera();
+        };
+
+        photoBtn.onclick = () => {
+            canvas.width = camera.videoWidth;
+            canvas.height = camera.videoHeight;
+            canvas.getContext("2d").drawImage(camera, 0, 0);
+            let imgData = canvas.toDataURL("image/png");
+            previewImg.src = imgData;
+            previewContainer.style.display = "flex";
+        };
+
+        document.getElementById("save").onclick = () => {
+            let a = document.createElement("a");
+            a.href = previewImg.src;
+            a.download = "foto.png";
+            a.click();
+        };
+
+        document.getElementById("retake").onclick = () => {
+            previewContainer.style.display = "none";
+        };
+
+        videoBtn.onclick = () => {
+            if (!mediaRecorder || mediaRecorder.state === "inactive") {
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
+                mediaRecorder.onstop = () => {
+                    let blob = new Blob(recordedChunks, { type: "video/mp4" });
+                    let url = URL.createObjectURL(blob);
+                    previewImg.src = url;
+                    previewContainer.style.display = "flex";
+                };
+                mediaRecorder.start();
+                videoBtn.textContent = "🔴";
+            } else {
+                mediaRecorder.stop();
+                videoBtn.textContent = "🎥";
+            }
+        };
+
         startCamera();
-    });
-
-    document.getElementById("capture").addEventListener("click", () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = overlay.naturalWidth;
-        canvas.height = overlay.naturalHeight;
-        const ctx = canvas.getContext("2d");
-
-        // Desenha a câmera atrás
-        ctx.drawImage(camera, 0, 0, canvas.width, canvas.height);
-
-        // Desenha a moldura por cima
-        ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
-
-        const link = document.createElement("a");
-        link.download = "foto_moldura.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-    });
-
-    document.getElementById("record").addEventListener("click", () => {
-        alert("📹 Função de vídeo será ativada depois");
-    });
-
-    startCamera();
-</script>
-
+    </script>
+</body>
 </html>
