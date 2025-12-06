@@ -75,17 +75,17 @@
 <script>
     let facingMode = "user";
     let stream;
+    const camera = document.getElementById("camera");
+    const overlay = document.getElementById("overlay");
 
     async function startCamera() {
-        if (stream) {
-            stream.getTracks().forEach(track => track.stop());
-        }
+        if (stream) stream.getTracks().forEach(t => t.stop());
 
         stream = await navigator.mediaDevices.getUserMedia({
             video: { facingMode }
         });
 
-        document.getElementById("camera").srcObject = stream;
+        camera.srcObject = stream;
     }
 
     document.getElementById("flip").addEventListener("click", () => {
@@ -94,15 +94,28 @@
     });
 
     document.getElementById("capture").addEventListener("click", () => {
-        alert("Foto capturada (função pendente)");
+        const canvas = document.createElement("canvas");
+        canvas.width = overlay.naturalWidth;
+        canvas.height = overlay.naturalHeight;
+        const ctx = canvas.getContext("2d");
+
+        // Desenha a câmera atrás
+        ctx.drawImage(camera, 0, 0, canvas.width, canvas.height);
+
+        // Desenha a moldura por cima
+        ctx.drawImage(overlay, 0, 0, canvas.width, canvas.height);
+
+        const link = document.createElement("a");
+        link.download = "foto_moldura.png";
+        link.href = canvas.toDataURL("image/png");
+        link.click();
     });
 
     document.getElementById("record").addEventListener("click", () => {
-        alert("Vídeo em gravação (função pendente)");
+        alert("📹 Função de vídeo será ativada depois");
     });
 
     startCamera();
 </script>
 
-</body>
 </html>
