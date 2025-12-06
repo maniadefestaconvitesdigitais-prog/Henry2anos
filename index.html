@@ -1,166 +1,269 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Câmera com Moldura - Henry 2 anos</title>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Henrique 2 Anos - Moldura</title>
 <style>
-    body {
-        margin: 0;
-        padding: 0;
-        overflow: hidden;
-        background: black;
-        font-family: sans-serif;
-    }
+  :root{--btn-size:70px}
+  html,body{height:100%;margin:0;background:#000;overflow:hidden;font-family:Arial,Helvetica,sans-serif}
+  #cameraWrap{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:#000}
+  video#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:none;z-index:1}
+  img#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:2}
 
-    #camera-container {
-        position: fixed;
-        width: 100vw;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
+  /* CONTROLS */
+  .controls{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,20px);display:flex;justify-content:space-around;align-items:center;z-index:4;padding:8px 16px}
+  .btn{width:var(--btn-size);height:var(--btn-size);border-radius:50%;background:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer}
+  .btn.recording{background:#fff;color:#d00}
+  .small{width:50px;height:50px;border-radius:50%;font-size:20px}
 
-    video {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-    }
+  /* REC indicator (top center) */
+  #recBar{position:fixed;top:env(safe-area-inset-top,8px);left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(0,0,0,0.35);padding:6px 12px;border-radius:20px;color:#fff;font-weight:600;z-index:5;visibility:hidden}
+  .dot{width:12px;height:12px;border-radius:50%;background:#d00;box-shadow:0 0 8px rgba(208,0,0,.9)}
 
-    #moldura {
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        object-fit: cover;
-        pointer-events: none;
-    }
+  /* Photo preview overlay */
+  #previewLayer{position:fixed;inset:0;display:none;z-index:10;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);flex-direction:column;padding:18px;gap:12px}
+  #previewImg{max-width:94%;max-height:72vh;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
+  .previewBtns{display:flex;gap:12px;margin-top:12px}
+  .actionBtn{padding:12px 18px;border-radius:10px;background:#fff;border:none;font-weight:700;cursor:pointer}
 
-    .buttons {
-        position: absolute;
-        bottom: 20px;
-        width: 100%;
-        display: flex;
-        justify-content: space-evenly;
-        z-index: 10;
-    }
-
-    button {
-        width: 65px;
-        height: 65px;
-        border-radius: 50%;
-        border: none;
-        font-size: 24px;
-        background: white;
-        cursor: pointer;
-    }
-
-    #miniVideo {
-        position: absolute;
-        bottom: 100px;
-        left: 15px;
-        width: 100px;
-        border-radius: 6px;
-        display: none;
-        z-index: 20;
-        background: black;
-    }
+  /* mini-video thumbnail (quando vídeo gravado) */
+  #miniThumb{position:fixed;bottom:120px;left:12px;width:96px;height:170px;border-radius:8px;overflow:hidden;display:none;z-index:6;background:#000}
+  #miniThumb video{width:100%;height:100%;object-fit:cover}
 </style>
 </head>
 <body>
 
-<div id="camera-container">
-    <video id="video" autoplay muted playsinline></video>
-    <img id="moldura" src="moldura.png">
+<div id="cameraWrap">
+  <video id="cam" autoplay playsinline muted></video>
+  <img id="overlay" src="moldura.png" alt="moldura">
 </div>
 
-<video id="miniVideo" controls></video>
+<!-- REC + timer -->
+<div id="recBar"><div class="dot"></div><div id="recText">REC 00:00</div></div>
 
-<div class="buttons">
-    <button id="flip">🔄</button>
-    <button id="capture">📸</button>
-    <button id="record">🎥</button>
+<!-- mini thumb do vídeo gravado (opcional) -->
+<div id="miniThumb"><video id="miniVideo" muted loop></video></div>
+
+<!-- photo preview -->
+<div id="previewLayer">
+  <img id="previewImg" alt="prévia foto">
+  <div class="previewBtns">
+    <button id="savePhoto" class="actionBtn">SALVAR NA GALERIA</button>
+    <button id="retake" class="actionBtn">TIRAR OUTRA</button>
+  </div>
 </div>
 
-<canvas id="canvas" style="display:none;"></canvas>
+<!-- controles -->
+<div class="controls">
+  <button id="flip" class="btn small" title="Virar câmera">🔄</button>
+  <button id="photoBtn" class="btn" title="Tirar foto">📸</button>
+  <button id="recordBtn" class="btn" title="Gravar vídeo">🎥</button>
+</div>
+
+<!-- canvas fixo 9:16 para garantir exportação em 1080x1920 -->
+<canvas id="recCanvas" width="1080" height="1920" style="display:none"></canvas>
 
 <script>
-let video = document.getElementById("video");
-let canvas = document.getElementById("canvas");
-let miniVideo = document.getElementById("miniVideo");
-let recordButton = document.getElementById("record");
+/* === configurações iniciais === */
+const overlayName = "moldura.png"; // certifique-se que este é o nome no repo
+const cam = document.getElementById('cam');
+const overlay = document.getElementById('overlay');
+const recCanvas = document.getElementById('recCanvas');
+const recCtx = recCanvas.getContext('2d');
 
-let stream;
-let recorder;
-let recordedChunks = [];
+const flipBtn = document.getElementById('flip');
+const photoBtn = document.getElementById('photoBtn');
+const recordBtn = document.getElementById('recordBtn');
+
+const previewLayer = document.getElementById('previewLayer');
+const previewImg = document.getElementById('previewImg');
+const savePhoto = document.getElementById('savePhoto');
+const retake = document.getElementById('retake');
+
+const recBar = document.getElementById('recBar');
+const recText = document.getElementById('recText');
+
+const miniThumb = document.getElementById('miniThumb');
+const miniVideo = document.getElementById('miniVideo');
+
+/* estado */
+let stream = null;
 let usingFront = true;
+let mediaRecorder = null;
+let recStream = null;
+let recChunks = [];
+let recRafId = null;
+let recStartTime = null;
+let recTimerInterval = null;
 
-async function startCamera() {
-    stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: usingFront ? "user" : "environment" },
-        audio: true
-    });
+/* forza o overlay a carregar (garante cache) */
+overlay.src = overlayName;
 
-    video.srcObject = stream;
+/* === iniciar câmera === */
+async function startCamera(){
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: usingFront ? 'user' : 'environment' }, audio: true });
+    cam.srcObject = stream;
+  } catch(e){
+    alert("Permita o acesso à câmera e microfone no navegador.");
+    console.error(e);
+  }
 }
 startCamera();
 
-document.getElementById("flip").onclick = () => {
-    usingFront = !usingFront;
-    startCamera();
-};
+/* === util: desenhar camera com cover dentro do canvas 1080x1920 === */
+function drawToCanvas(targetCtx, targetW = 1080, targetH = 1920){
+  // pega dimensões do vídeo ao vivo
+  const vw = cam.videoWidth || 1280;
+  const vh = cam.videoHeight || 720;
+  if (!vw || !vh) return;
 
-// FOTO
-document.getElementById("capture").onclick = () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    let ctx = canvas.getContext("2d");
-    ctx.drawImage(video, 0, 0);
+  // calcular scale-cover
+  const scale = Math.max(targetW / vw, targetH / vh);
+  const sw = vw * scale;
+  const sh = vh * scale;
+  const sx = (targetW - sw) / 2;
+  const sy = (targetH - sh) / 2;
 
-    let moldura = document.getElementById("moldura");
-    ctx.drawImage(moldura, 0, 0, canvas.width, canvas.height);
+  // desenha vídeo (cover)
+  targetCtx.clearRect(0,0,targetW,targetH);
+  try {
+    targetCtx.drawImage(cam, 0, 0, vw, vh, sx, sy, sw, sh);
+  } catch(e) { /* pode falhar enquanto o vídeo não está pronto */ }
 
-    let link = document.createElement("a");
-    link.download = "henry2anos-foto.png";
-    link.href = canvas.toDataURL("image/png");
-    link.click();
-};
+  // desenha moldura por cima (estica para preencher)
+  try {
+    targetCtx.drawImage(overlay, 0, 0, targetW, targetH);
+  } catch(e){}
+}
 
-// VÍDEO
-document.getElementById("record").onclick = () => {
-    if (!recorder || recorder.state === "inactive") {
-        recordedChunks = [];
-        recordButton.textContent = "🔴";
+/* === FOTO: captura + prévia === */
+photoBtn.addEventListener('click', () => {
+  // desenha frame atual no canvas 1080x1920
+  drawToCanvas(recCtx, 1080, 1920);
 
-        let mixedStream = new MediaStream([
-            ...stream.getVideoTracks(),
-            ...stream.getAudioTracks()
-        ]);
+  // gerar dataURL e mostrar prévia
+  const dataUrl = recCanvas.toDataURL('image/png');
+  previewImg.src = dataUrl;
+  previewLayer.style.display = 'flex';
 
-        recorder = new MediaRecorder(mixedStream, { mimeType: "video/webm" });
-        recorder.ondataavailable = e => recordedChunks.push(e.data);
+  // definir ação salvar (download)
+  savePhoto.onclick = () => {
+    downloadDataUrl(dataUrl, `henrique_foto_${Date.now()}.png`);
+  };
 
-        recorder.onstop = () => {
-            let blob = new Blob(recordedChunks, { type: "video/webm" });
+  // tirar outra
+  retake.onclick = () => {
+    previewLayer.style.display = 'none';
+    previewImg.src = '';
+  };
+});
 
-            let videoURL = URL.createObjectURL(blob);
-            miniVideo.src = videoURL;
-            miniVideo.style.display = "block";
+/* === gravação: desenhar frames numa canvas e gravar dela (com áudio) === */
+recordBtn.addEventListener('click', async () => {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+    // iniciar gravação
+    recChunks = [];
 
-            let a = document.createElement("a");
-            a.href = videoURL;
-            a.download = "henry2anos-video.webm";
-            a.click();
-        };
+    // cria stream do canvas
+    recStream = recCanvas.captureStream(30); // 30 fps
+    // anexar áudio do stream original (se houver)
+    try {
+      const audioTracks = stream.getAudioTracks();
+      if (audioTracks && audioTracks.length) audioTracks.forEach(t => recStream.addTrack(t));
+    } catch(e){ console.warn('não foi possível anexar audio:', e); }
 
-        recorder.start();
-    } else {
-        recordButton.textContent = "🎥";
-        recorder.stop();
+    // preparar MediaRecorder
+    try {
+      mediaRecorder = new MediaRecorder(recStream, { mimeType: 'video/webm;codecs=vp8,opus' });
+    } catch(err) {
+      alert('Gravação não suportada no seu navegador. Use Chrome no Android para melhor compatibilidade.');
+      console.error(err);
+      return;
     }
-};
-</script>
 
+    mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
+    mediaRecorder.onstop = () => {
+      const blob = new Blob(recChunks, { type: 'video/webm' });
+      // baixar automaticamente
+      const url = URL.createObjectURL(blob);
+      downloadUrl(url, `henrique_video_${Date.now()}.webm`);
+      // mini thumbnail (opcional) - mostramos mini thumb sem prévia completa
+      miniVideo.src = url;
+      miniThumb.style.display = 'block';
+      setTimeout(()=> URL.revokeObjectURL(url), 2000);
+    };
+
+    // começar loop de desenho
+    function drawLoop(){
+      drawToCanvas(recCtx, 1080, 1920);
+      recRafId = requestAnimationFrame(drawLoop);
+    }
+    drawLoop();
+
+    // iniciar gravação
+    mediaRecorder.start();
+    recordBtn.classList.add('recording');
+    recordBtn.textContent = '🔴';
+    showRecBar(true);
+    recStartTime = Date.now();
+    recTimerInterval = setInterval(updateRecTimer, 250);
+  } else {
+    // parar gravação
+    mediaRecorder.stop();
+    if (recRafId) cancelAnimationFrame(recRafId);
+    recordBtn.classList.remove('recording');
+    recordBtn.textContent = '🎥';
+    showRecBar(false);
+    clearInterval(recTimerInterval);
+    recTimerInterval = null;
+  }
+});
+
+/* === helpers: show/hide rec bar and update timer === */
+function showRecBar(on){
+  recBar.style.visibility = on ? 'visible' : 'hidden';
+  if (!on) recText.textContent = 'REC 00:00';
+}
+function updateRecTimer(){
+  if (!recStartTime) return;
+  const diff = Math.floor((Date.now() - recStartTime)/1000);
+  const mm = String(Math.floor(diff/60)).padStart(2,'0');
+  const ss = String(diff%60).padStart(2,'0');
+  recText.textContent = `REC ${mm}:${ss}`;
+}
+
+/* === util: download helpers === */
+function downloadDataUrl(dataUrl, filename){
+  const a = document.createElement('a');
+  a.href = dataUrl;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+function downloadUrl(url, filename){
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/* === flip camera === */
+flipBtn.addEventListener('click', () => {
+  usingFront = !usingFront;
+  startCamera();
+});
+
+/* === ocultar miniThumb ao tocar === */
+miniThumb.addEventListener('click', () => {
+  // abrir em nova aba para visualizar melhor
+  if (miniVideo.src) window.open(miniVideo.src, '_blank');
+});
+</script>
 </body>
 </html>
