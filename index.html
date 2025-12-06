@@ -1,189 +1,166 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Câmera com Moldura</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background: black;
-            display: flex;
-            justify-content: center;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Câmera com Moldura - Henry 2 anos</title>
+<style>
+    body {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+        background: black;
+        font-family: sans-serif;
+    }
 
-        #camera-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            overflow: hidden;
-        }
+    #camera-container {
+        position: fixed;
+        width: 100vw;
+        height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-        video {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transform: scaleX(-1);
-        }
+    video {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
 
-        #frame {
-            position: absolute;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            pointer-events: none;
-        }
+    #moldura {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+    }
 
-        #controls {
-            position: absolute;
-            bottom: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: space-evenly;
-            align-items: center;
-            z-index: 20;
-        }
+    .buttons {
+        position: absolute;
+        bottom: 20px;
+        width: 100%;
+        display: flex;
+        justify-content: space-evenly;
+        z-index: 10;
+    }
 
-        .btn {
-            width: 70px;
-            height: 70px;
-            border-radius: 50%;
-            background: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 30px;
-            cursor: pointer;
-            user-select: none;
-        }
+    button {
+        width: 65px;
+        height: 65px;
+        border-radius: 50%;
+        border: none;
+        font-size: 24px;
+        background: white;
+        cursor: pointer;
+    }
 
-        #preview-container {
-            display: none;
-            position: absolute;
-            inset: 0;
-            background: rgba(0,0,0,0.9);
-            z-index: 30;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-        }
-
-        #preview {
-            width: 90%;
-            border-radius: 10px;
-        }
-
-        .preview-btns {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .preview-btn {
-            padding: 15px 20px;
-            background: white;
-            font-size: 18px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-    </style>
+    #miniVideo {
+        position: absolute;
+        bottom: 100px;
+        left: 15px;
+        width: 100px;
+        border-radius: 6px;
+        display: none;
+        z-index: 20;
+        background: black;
+    }
+</style>
 </head>
 <body>
-    <div id="camera-container">
-        <video id="camera" autoplay playsinline></video>
-        <img id="frame" src="moldura.png">
 
-        <div id="controls">
-            <div class="btn" id="flip">🔄</div>
-            <div class="btn" id="photo">📸</div>
-            <div class="btn" id="video-btn">🎥</div>
-        </div>
+<div id="camera-container">
+    <video id="video" autoplay muted playsinline></video>
+    <img id="moldura" src="moldura.png">
+</div>
 
-        <div id="preview-container">
-            <img id="preview">
-            <div class="preview-btns">
-                <div class="preview-btn" id="save">Salvar</div>
-                <div class="preview-btn" id="retake">Tirar outra</div>
-            </div>
-        </div>
-    </div>
+<video id="miniVideo" controls></video>
 
-    <canvas id="canvas" style="display:none;"></canvas>
+<div class="buttons">
+    <button id="flip">🔄</button>
+    <button id="capture">📸</button>
+    <button id="record">🎥</button>
+</div>
 
-    <script>
-        let camera = document.getElementById("camera");
-        let canvas = document.getElementById("canvas");
-        let flipBtn = document.getElementById("flip");
-        let photoBtn = document.getElementById("photo");
-        let videoBtn = document.getElementById("video-btn");
-        let previewContainer = document.getElementById("preview-container");
-        let previewImg = document.getElementById("preview");
+<canvas id="canvas" style="display:none;"></canvas>
 
-        let currentFacingMode = "user";
-        let stream;
-        let mediaRecorder;
-        let recordedChunks = [];
+<script>
+let video = document.getElementById("video");
+let canvas = document.getElementById("canvas");
+let miniVideo = document.getElementById("miniVideo");
+let recordButton = document.getElementById("record");
 
-        async function startCamera() {
-            if (stream) stream.getTracks().forEach(t => t.stop());
+let stream;
+let recorder;
+let recordedChunks = [];
+let usingFront = true;
 
-            stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: currentFacingMode },
-                audio: true
-            });
+async function startCamera() {
+    stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: usingFront ? "user" : "environment" },
+        audio: true
+    });
 
-            camera.srcObject = stream;
-        }
+    video.srcObject = stream;
+}
+startCamera();
 
-        flipBtn.onclick = () => {
-            currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
-            startCamera();
-        };
+document.getElementById("flip").onclick = () => {
+    usingFront = !usingFront;
+    startCamera();
+};
 
-        photoBtn.onclick = () => {
-            canvas.width = camera.videoWidth;
-            canvas.height = camera.videoHeight;
-            canvas.getContext("2d").drawImage(camera, 0, 0);
-            let imgData = canvas.toDataURL("image/png");
-            previewImg.src = imgData;
-            previewContainer.style.display = "flex";
-        };
+// FOTO
+document.getElementById("capture").onclick = () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
 
-        document.getElementById("save").onclick = () => {
+    let moldura = document.getElementById("moldura");
+    ctx.drawImage(moldura, 0, 0, canvas.width, canvas.height);
+
+    let link = document.createElement("a");
+    link.download = "henry2anos-foto.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+};
+
+// VÍDEO
+document.getElementById("record").onclick = () => {
+    if (!recorder || recorder.state === "inactive") {
+        recordedChunks = [];
+        recordButton.textContent = "🔴";
+
+        let mixedStream = new MediaStream([
+            ...stream.getVideoTracks(),
+            ...stream.getAudioTracks()
+        ]);
+
+        recorder = new MediaRecorder(mixedStream, { mimeType: "video/webm" });
+        recorder.ondataavailable = e => recordedChunks.push(e.data);
+
+        recorder.onstop = () => {
+            let blob = new Blob(recordedChunks, { type: "video/webm" });
+
+            let videoURL = URL.createObjectURL(blob);
+            miniVideo.src = videoURL;
+            miniVideo.style.display = "block";
+
             let a = document.createElement("a");
-            a.href = previewImg.src;
-            a.download = "foto.png";
+            a.href = videoURL;
+            a.download = "henry2anos-video.webm";
             a.click();
         };
 
-        document.getElementById("retake").onclick = () => {
-            previewContainer.style.display = "none";
-        };
+        recorder.start();
+    } else {
+        recordButton.textContent = "🎥";
+        recorder.stop();
+    }
+};
+</script>
 
-        videoBtn.onclick = () => {
-            if (!mediaRecorder || mediaRecorder.state === "inactive") {
-                recordedChunks = [];
-                mediaRecorder = new MediaRecorder(stream);
-                mediaRecorder.ondataavailable = e => recordedChunks.push(e.data);
-                mediaRecorder.onstop = () => {
-                    let blob = new Blob(recordedChunks, { type: "video/mp4" });
-                    let url = URL.createObjectURL(blob);
-                    previewImg.src = url;
-                    previewContainer.style.display = "flex";
-                };
-                mediaRecorder.start();
-                videoBtn.textContent = "🔴";
-            } else {
-                mediaRecorder.stop();
-                videoBtn.textContent = "🎥";
-            }
-        };
-
-        startCamera();
-    </script>
 </body>
 </html>
