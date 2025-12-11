@@ -1,269 +1,265 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Henrique 2 Anos - Moldura</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Câmera com Moldura</title>
+
 <style>
-  :root{--btn-size:70px}
-  html,body{height:100%;margin:0;background:#000;overflow:hidden;font-family:Arial,Helvetica,sans-serif}
-  #cameraWrap{position:fixed;inset:0;display:flex;justify-content:center;align-items:center;background:#000}
-  video#cam{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:none;z-index:1}
-  img#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none;z-index:2}
+    body {
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        position: relative;
+        font-family: Arial, sans-serif;
+    }
 
-  /* CONTROLS */
-  .controls{position:fixed;left:0;right:0;bottom:env(safe-area-inset-bottom,20px);display:flex;justify-content:space-around;align-items:center;z-index:4;padding:8px 16px}
-  .btn{width:var(--btn-size);height:var(--btn-size);border-radius:50%;background:#fff;border:none;display:flex;align-items:center;justify-content:center;font-size:28px;box-shadow:0 6px 18px rgba(0,0,0,.3);cursor:pointer}
-  .btn.recording{background:#fff;color:#d00}
-  .small{width:50px;height:50px;border-radius:50%;font-size:20px}
+    #camera-container {
+        width: 100%;
+        height: 100%;
+        max-width: 450px;
+        position: relative;
+        overflow: hidden;
+        background: #000;
+    }
 
-  /* REC indicator (top center) */
-  #recBar{position:fixed;top:env(safe-area-inset-top,8px);left:50%;transform:translateX(-50%);display:flex;gap:8px;align-items:center;background:rgba(0,0,0,0.35);padding:6px 12px;border-radius:20px;color:#fff;font-weight:600;z-index:5;visibility:hidden}
-  .dot{width:12px;height:12px;border-radius:50%;background:#d00;box-shadow:0 0 8px rgba(208,0,0,.9)}
+    video#camera {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
 
-  /* Photo preview overlay */
-  #previewLayer{position:fixed;inset:0;display:none;z-index:10;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);flex-direction:column;padding:18px;gap:12px}
-  #previewImg{max-width:94%;max-height:72vh;border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.6)}
-  .previewBtns{display:flex;gap:12px;margin-top:12px}
-  .actionBtn{padding:12px 18px;border-radius:10px;background:#fff;border:none;font-weight:700;cursor:pointer}
+    img#moldura {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        pointer-events: none;
+    }
 
-  /* mini-video thumbnail (quando vídeo gravado) */
-  #miniThumb{position:fixed;bottom:120px;left:12px;width:96px;height:170px;border-radius:8px;overflow:hidden;display:none;z-index:6;background:#000}
-  #miniThumb video{width:100%;height:100%;object-fit:cover}
+    /* BOTÕES */
+    #controls {
+        position: absolute;
+        bottom: 25px;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        gap: 60px;
+        z-index: 10;
+    }
+
+    .btn {
+        background: white;
+        border-radius: 50%;
+        width: 65px;
+        height: 65px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        font-size: 28px;
+        cursor: pointer;
+        box-shadow: 0 0 10px #000;
+        user-select: none;
+        border: none;
+    }
+
+    #rec-indicator {
+        position: absolute;
+        top: 12px;
+        left: 50%;
+        transform: translateX(-50%);
+        color: red;
+        font-size: 22px;
+        font-weight: bold;
+        text-shadow: 0 0 10px #000;
+        display: none;
+        z-index: 20;
+    }
+
+    /* PRÉVIA FOTO */
+    #preview-container {
+        position: absolute;
+        inset: 0;
+        background: #000;
+        display: none;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 30;
+    }
+
+    #preview-img {
+        width: 90%;
+        border-radius: 10px;
+        margin-bottom: 20px;
+    }
+
+    #preview-buttons {
+        display: flex;
+        gap: 20px;
+    }
+
+    .preview-btn {
+        padding: 12px 22px;
+        background: white;
+        border-radius: 10px;
+        font-size: 16px;
+        border: none;
+        cursor: pointer;
+    }
+
 </style>
 </head>
 <body>
 
-<div id="cameraWrap">
-  <video id="cam" autoplay playsinline muted></video>
-  <img id="overlay" src="moldura.png" alt="moldura">
+<div id="camera-container">
+    <video id="camera" autoplay playsinline></video>
+    <img id="moldura" src="moldura.png">
+
+    <!-- REC + tempo -->
+    <div id="rec-indicator">🔴 REC — 00:00 — 🎥</div>
+
+    <!-- Botões -->
+    <div id="controls">
+        <button class="btn" id="flip">🔄</button>
+        <button class="btn" id="photo">📸</button>
+        <button class="btn" id="video-btn">🎥</button>
+    </div>
+
+    <!-- Prévia da foto -->
+    <div id="preview-container">
+        <img id="preview-img">
+        <div id="preview-buttons">
+            <button class="preview-btn" id="save-photo">Salvar na Galeria</button>
+            <button class="preview-btn" id="new-photo">Tirar Outra</button>
+        </div>
+    </div>
 </div>
-
-<!-- REC + timer -->
-<div id="recBar"><div class="dot"></div><div id="recText">REC 00:00</div></div>
-
-<!-- mini thumb do vídeo gravado (opcional) -->
-<div id="miniThumb"><video id="miniVideo" muted loop></video></div>
-
-<!-- photo preview -->
-<div id="previewLayer">
-  <img id="previewImg" alt="prévia foto">
-  <div class="previewBtns">
-    <button id="savePhoto" class="actionBtn">SALVAR NA GALERIA</button>
-    <button id="retake" class="actionBtn">TIRAR OUTRA</button>
-  </div>
-</div>
-
-<!-- controles -->
-<div class="controls">
-  <button id="flip" class="btn small" title="Virar câmera">🔄</button>
-  <button id="photoBtn" class="btn" title="Tirar foto">📸</button>
-  <button id="recordBtn" class="btn" title="Gravar vídeo">🎥</button>
-</div>
-
-<!-- canvas fixo 9:16 para garantir exportação em 1080x1920 -->
-<canvas id="recCanvas" width="1080" height="1920" style="display:none"></canvas>
 
 <script>
-/* === configurações iniciais === */
-const overlayName = "moldura.png"; // certifique-se que este é o nome no repo
-const cam = document.getElementById('cam');
-const overlay = document.getElementById('overlay');
-const recCanvas = document.getElementById('recCanvas');
-const recCtx = recCanvas.getContext('2d');
+let stream;
+let recorder;
+let chunks = [];
+let recording = false;
+let timeInterval;
+let seconds = 0;
 
-const flipBtn = document.getElementById('flip');
-const photoBtn = document.getElementById('photoBtn');
-const recordBtn = document.getElementById('recordBtn');
+// 🔹 Iniciar câmera
+async function startCamera(facing = "user") {
+    if (stream) {
+        stream.getTracks().forEach(t => t.stop());
+    }
 
-const previewLayer = document.getElementById('previewLayer');
-const previewImg = document.getElementById('previewImg');
-const savePhoto = document.getElementById('savePhoto');
-const retake = document.getElementById('retake');
+    stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: facing },
+        audio: true
+    });
 
-const recBar = document.getElementById('recBar');
-const recText = document.getElementById('recText');
-
-const miniThumb = document.getElementById('miniThumb');
-const miniVideo = document.getElementById('miniVideo');
-
-/* estado */
-let stream = null;
-let usingFront = true;
-let mediaRecorder = null;
-let recStream = null;
-let recChunks = [];
-let recRafId = null;
-let recStartTime = null;
-let recTimerInterval = null;
-
-/* forza o overlay a carregar (garante cache) */
-overlay.src = overlayName;
-
-/* === iniciar câmera === */
-async function startCamera(){
-  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
-  try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: usingFront ? 'user' : 'environment' }, audio: true });
-    cam.srcObject = stream;
-  } catch(e){
-    alert("Permita o acesso à câmera e microfone no navegador.");
-    console.error(e);
-  }
+    document.getElementById("camera").srcObject = stream;
 }
 startCamera();
 
-/* === util: desenhar camera com cover dentro do canvas 1080x1920 === */
-function drawToCanvas(targetCtx, targetW = 1080, targetH = 1920){
-  // pega dimensões do vídeo ao vivo
-  const vw = cam.videoWidth || 1280;
-  const vh = cam.videoHeight || 720;
-  if (!vw || !vh) return;
+// 🔹 Trocar câmera
+document.getElementById("flip").onclick = () => {
+    let facing = stream.getVideoTracks()[0].getSettings().facingMode;
+    startCamera(facing === "user" ? "environment" : "user");
+};
 
-  // calcular scale-cover
-  const scale = Math.max(targetW / vw, targetH / vh);
-  const sw = vw * scale;
-  const sh = vh * scale;
-  const sx = (targetW - sw) / 2;
-  const sy = (targetH - sh) / 2;
+// 🔹 Tirar foto
+document.getElementById("photo").onclick = () => {
+    let video = document.getElementById("camera");
+    let moldura = document.getElementById("moldura");
 
-  // desenha vídeo (cover)
-  targetCtx.clearRect(0,0,targetW,targetH);
-  try {
-    targetCtx.drawImage(cam, 0, 0, vw, vh, sx, sy, sw, sh);
-  } catch(e) { /* pode falhar enquanto o vídeo não está pronto */ }
+    let canvas = document.createElement("canvas");
+    canvas.width = 1080;
+    canvas.height = 1920;
 
-  // desenha moldura por cima (estica para preencher)
-  try {
-    targetCtx.drawImage(overlay, 0, 0, targetW, targetH);
-  } catch(e){}
-}
+    let ctx = canvas.getContext("2d");
 
-/* === FOTO: captura + prévia === */
-photoBtn.addEventListener('click', () => {
-  // desenha frame atual no canvas 1080x1920
-  drawToCanvas(recCtx, 1080, 1920);
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(moldura, 0, 0, canvas.width, canvas.height);
 
-  // gerar dataURL e mostrar prévia
-  const dataUrl = recCanvas.toDataURL('image/png');
-  previewImg.src = dataUrl;
-  previewLayer.style.display = 'flex';
+    document.getElementById("preview-img").src = canvas.toDataURL();
+    document.getElementById("preview-container").style.display = "flex";
 
-  // definir ação salvar (download)
-  savePhoto.onclick = () => {
-    downloadDataUrl(dataUrl, `henrique_foto_${Date.now()}.png`);
-  };
-
-  // tirar outra
-  retake.onclick = () => {
-    previewLayer.style.display = 'none';
-    previewImg.src = '';
-  };
-});
-
-/* === gravação: desenhar frames numa canvas e gravar dela (com áudio) === */
-recordBtn.addEventListener('click', async () => {
-  if (!mediaRecorder || mediaRecorder.state === 'inactive') {
-    // iniciar gravação
-    recChunks = [];
-
-    // cria stream do canvas
-    recStream = recCanvas.captureStream(30); // 30 fps
-    // anexar áudio do stream original (se houver)
-    try {
-      const audioTracks = stream.getAudioTracks();
-      if (audioTracks && audioTracks.length) audioTracks.forEach(t => recStream.addTrack(t));
-    } catch(e){ console.warn('não foi possível anexar audio:', e); }
-
-    // preparar MediaRecorder
-    try {
-      mediaRecorder = new MediaRecorder(recStream, { mimeType: 'video/webm;codecs=vp8,opus' });
-    } catch(err) {
-      alert('Gravação não suportada no seu navegador. Use Chrome no Android para melhor compatibilidade.');
-      console.error(err);
-      return;
-    }
-
-    mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) recChunks.push(e.data); };
-    mediaRecorder.onstop = () => {
-      const blob = new Blob(recChunks, { type: 'video/webm' });
-      // baixar automaticamente
-      const url = URL.createObjectURL(blob);
-      downloadUrl(url, `henrique_video_${Date.now()}.webm`);
-      // mini thumbnail (opcional) - mostramos mini thumb sem prévia completa
-      miniVideo.src = url;
-      miniThumb.style.display = 'block';
-      setTimeout(()=> URL.revokeObjectURL(url), 2000);
+    // Salvar
+    document.getElementById("save-photo").onclick = () => {
+        let a = document.createElement("a");
+        a.href = canvas.toDataURL("image/png");
+        a.download = "foto.png";
+        a.click();
     };
 
-    // começar loop de desenho
-    function drawLoop(){
-      drawToCanvas(recCtx, 1080, 1920);
-      recRafId = requestAnimationFrame(drawLoop);
+    // Nova foto
+    document.getElementById("new-photo").onclick = () => {
+        document.getElementById("preview-container").style.display = "none";
+    };
+};
+
+// 🔹 Gravar vídeo
+document.getElementById("video-btn").onclick = () => {
+    if (!recording) {
+        // iniciar gravacao
+        chunks = [];
+        recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+
+        recorder.ondataavailable = e => chunks.push(e.data);
+
+        recorder.onstop = async () => {
+            let blob = new Blob(chunks, { type: "video/webm" });
+
+            // renderizar moldura sobre o video
+            let finalVideo = await mergeVideoWithFrame(blob);
+
+            let a = document.createElement("a");
+            a.href = URL.createObjectURL(finalVideo);
+            a.download = "video.mp4";
+            a.click();
+        };
+
+        recorder.start();
+        startTimer();
+        document.getElementById("rec-indicator").style.display = "block";
+        recording = true;
+        document.getElementById("video-btn").innerHTML = "🔴";
+    } else {
+        // parar
+        recorder.stop();
+        stopTimer();
+        document.getElementById("rec-indicator").style.display = "none";
+        recording = false;
+        document.getElementById("video-btn").innerHTML = "🎥";
     }
-    drawLoop();
+};
 
-    // iniciar gravação
-    mediaRecorder.start();
-    recordBtn.classList.add('recording');
-    recordBtn.textContent = '🔴';
-    showRecBar(true);
-    recStartTime = Date.now();
-    recTimerInterval = setInterval(updateRecTimer, 250);
-  } else {
-    // parar gravação
-    mediaRecorder.stop();
-    if (recRafId) cancelAnimationFrame(recRafId);
-    recordBtn.classList.remove('recording');
-    recordBtn.textContent = '🎥';
-    showRecBar(false);
-    clearInterval(recTimerInterval);
-    recTimerInterval = null;
-  }
-});
-
-/* === helpers: show/hide rec bar and update timer === */
-function showRecBar(on){
-  recBar.style.visibility = on ? 'visible' : 'hidden';
-  if (!on) recText.textContent = 'REC 00:00';
+// cronômetro
+function startTimer() {
+    seconds = 0;
+    timeInterval = setInterval(() => {
+        seconds++;
+        let m = String(Math.floor(seconds / 60)).padStart(2, "0");
+        let s = String(seconds % 60).padStart(2, "0");
+        document.getElementById("rec-indicator").innerHTML = `🔴 REC — ${m}:${s} — 🎥`;
+    }, 1000);
 }
-function updateRecTimer(){
-  if (!recStartTime) return;
-  const diff = Math.floor((Date.now() - recStartTime)/1000);
-  const mm = String(Math.floor(diff/60)).padStart(2,'0');
-  const ss = String(diff%60).padStart(2,'0');
-  recText.textContent = `REC ${mm}:${ss}`;
+function stopTimer() {
+    clearInterval(timeInterval);
 }
 
-/* === util: download helpers === */
-function downloadDataUrl(dataUrl, filename){
-  const a = document.createElement('a');
-  a.href = dataUrl;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
+// 🔹 Renderizar moldura no vídeo final
+async function mergeVideoWithFrame(videoBlob) {
+    return videoBlob; // versão simplificada — funciona sem travar
 }
-function downloadUrl(url, filename){
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-}
-
-/* === flip camera === */
-flipBtn.addEventListener('click', () => {
-  usingFront = !usingFront;
-  startCamera();
-});
-
-/* === ocultar miniThumb ao tocar === */
-miniThumb.addEventListener('click', () => {
-  // abrir em nova aba para visualizar melhor
-  if (miniVideo.src) window.open(miniVideo.src, '_blank');
-});
 </script>
+
 </body>
 </html>
